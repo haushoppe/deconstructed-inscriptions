@@ -174,7 +174,7 @@ document.getElementById('playButton').addEventListener('click', async () => {
     drumPattern.start('1m');
 
     playSample('digitalCurrency', 1, 2.4, "4n", "1m", "2m");
-    playSample('melody', 11, 11, "1m", "4m", "4m");
+    // playSample('melody', 11, 11, "1m", "4m", "4m");
 
   } else {
     // Stop all sequences and patterns if the Transport is running
