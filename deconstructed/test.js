@@ -4,6 +4,8 @@
 // Setting it to 80 means the track will have a slow, relaxed pace.
 Tone.Transport.bpm.value = 80;
 
+const audioUrl = '/content/ca666064f776995d96c5f1bc6f4a1aad31e2216ec22fb06e3c94a0a44f4331bai0';
+
 // Define instruments
 // Create a membrane synthesizer for drum sounds and route output to speakers
 // (ideal for creating percussive sounds like kicks)
@@ -12,57 +14,52 @@ const drums = new Tone.MembraneSynth().toDestination();
 // Create a polyphonic synthesizer with a sine wave for melodic content
 // Polyphony means it can play multiple notes at once.
 const synth = new Tone.PolySynth(Tone.Synth, {
-    oscillator: {
-        type: 'sine'
-    }
+  oscillator: {
+    type: 'sine'
+  }
 }).toDestination();
 
 // Create another polyphonic synthesizer set up like a piano with sine waves
 const piano = new Tone.PolySynth(Tone.Synth, {
-    oscillator: {
-        type: 'sine'
-    }
+  oscillator: {
+    type: 'sine'
+  }
 }).toDestination();
 
 // Set up a monophonic synthesizer for bass lines with a square wave oscillator
 // Monophonic means it can only play one note at a time.
 const bass = new Tone.MonoSynth({
-    oscillator: {
-        type: 'square'
-    },
-    envelope: {
-        attack: 0.1,
-        decay: 0.3,
-        release: 2
-    }
+  oscillator: {
+    type: 'square'
+  },
+  envelope: {
+    attack: 0.1,
+    decay: 0.3,
+    release: 2
+  }
 }).toDestination();
 
 // Create a choir-like sound using a polyphonic synthesizer with a sawtooth wave
 // The volume is set lower to blend well with other instruments.
 const choir = new Tone.PolySynth(Tone.Synth, {
-    volume: -10,
-    oscillator: {
-        type: 'sawtooth'
-    },
-    envelope: {
-        attack: 0.5,
-        decay: 0.1,
-        sustain: 0.3,
-        release: 1
-    }
-}).toDestination();
-
-const player = new Tone.Player({
-  url: "/content/ca666064f776995d96c5f1bc6f4a1aad31e2216ec22fb06e3c94a0a44f4331bai0",
-  onload: () => console.log('Audio loaded!')
+  volume: -10,
+  oscillator: {
+    type: 'sawtooth'
+  },
+  envelope: {
+    attack: 0.5,
+    decay: 0.1,
+    sustain: 0.3,
+    release: 1
+  }
 }).toDestination();
 
 // Effects
 // Apply reverb to create a sense of space, connected to main audio output
 // Reverb is an effect that simulates the way sound bounces off walls and objects in a space
 const reverb = new Tone.Reverb({
-    decay: 2.5,
-    preDelay: 0.3
+  decay: 2.5,
+  preDelay: 0.3
 }).toDestination();
 
 // Connect instruments to reverb effect
@@ -98,44 +95,73 @@ const choirPattern = new Tone.Sequence((time, note) => { choir.triggerAttackRele
 const drumPattern = new Tone.Pattern((time, note) => { drums.triggerAttackRelease(note, "8n", time); }, drumNotes, "up");
 
 
-// Function to play a specific part of the audio
-function playPart(start, duration) {
-  // Ensure the player is not currently playing
-  if (player.state !== 'started') {
 
-      // schedules the playback to start 0.1 seconds in the future relative
-      // to the exact moment the line of code is executed
-      // this small delay is often used to ensure smooth playback initiation,
-      // avoiding clicks or abrupt starts by giving the audio processing
-      // pipeline a short buffer period to prepare the audio for playback.
-      player.start('+0.1', start, duration);
+// Create a new buffer and load the audio file
+var buffer = new Tone.Buffer(audioUrl, function() {
+
+  console.log("Audio Buffer is now available.");
+
+  // Create a map to manage multiple players
+  var players = new Tone.Players({
+      sample1: buffer.get(),
+      sample2: buffer.get(),
+  }, function() {
+      console.log("Players are ready to play the buffer.");
+  }).toDestination();
+
+  // Function to play a sample given a name, start time, duration, and repetition details
+  function playSample(name, sampleStart, sampleDuration, trackStart, trackDelay, repetitions) {
+
+    let player = players.player(name);
+
+      for (let i = 0; i < repetitions; i++) {
+          // Calculate the start time for each repetition
+          let delay = trackStart + i * trackDelay;
+          player.start(`+${delay}`, sampleStart, sampleDuration);
+      }
   }
-}
 
-// Add Play / Stop functionality to button on web page
-document.getElementById('playButton').addEventListener('click', async () => {
+  // Stop all currently playing audio
+  function stopAllAudio() {
+      players.stopAll();
+  }
+
+
+
+  // Add Play / Stop functionality to button on web page
+  document.getElementById('playButton').addEventListener('click', async () => {
+
     await Tone.start();  // Start the Audio Context
     console.log("Playback started");
 
     if (Tone.Transport.state === 'stopped') {
-        // Start all sequences and patterns if the Transport is stopped
-        Tone.Transport.start();
-        melodyPart.start(0);
-        chordPart.start('2m');
-        bassPattern.start('4m');
-        choirPattern.start('8m');
-        drumPattern.start('1m');
+      // Start all sequences and patterns if the Transport is stopped
+      // Tone.Transport.start();
+      // melodyPart.start(0);
+      // chordPart.start('2m');
+      // bassPattern.start('4m');
+      // choirPattern.start('8m');
+      // drumPattern.start('1m');
 
-        // Play a part of the audio file, specify start time and duration in seconds
-        playPart(1, 2.5); // For example, start at 0.5 seconds and play for 2 seconds
+      // scratch + digital currency
+      // Start playing 1 second into the audio file, play until 2.5 seconds,
+      // start playback with a delay of 4 seconds between each repetition, repeat 3 times
+      // playSegment(audioUrl, 1, 3.1, 4, 3);
+
+      // sampleStart, sampleDuration, trackStart, trackDelay, repetitions
+      // playSample('sample1', 1, 2.5, 1, 3, 3);
+      playSample('sample2', 10, 5, 5, 0.1, 3);
 
     } else {
-        // Stop all sequences and patterns if the Transport is running
-        Tone.Transport.stop();
-        melodyPart.stop();
-        chordPart.stop();
-        bassPattern.stop();
-        choirPattern.stop();
-        drumPattern.stop();
+      // Stop all sequences and patterns if the Transport is running
+      Tone.Transport.stop();
+      melodyPart.stop();
+      chordPart.stop();
+      bassPattern.stop();
+      choirPattern.stop();
+      drumPattern.stop();
     }
+  });
+
+
 });
