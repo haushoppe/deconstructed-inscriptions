@@ -1,78 +1,71 @@
-  // Define synthesizers and effects
-  const kick = new Tone.MembraneSynth({
-    volume: -10
-}).toDestination();
 
-const snare = new Tone.NoiseSynth({
-    volume: -5,
-    noise: {
-        type: 'white'
-    },
-    envelope: {
-        attack: 0.005,
-        decay: 0.1,
-        sustain: 0.05,
-        release: 0.01
+// Chillwave/Trap Music Simulation
+
+// Setup BPM and scale
+Tone.Transport.bpm.value = 80.75;
+
+// Define instruments
+const drums = new Tone.MembraneSynth().toDestination();
+const synth = new Tone.PolySynth({
+    voice: Tone.Synth,
+    options: {
+        oscillator: {
+            type: 'sine'
+        }
     }
 }).toDestination();
-
-const bassSynth = new Tone.MonoSynth({
-    volume: -10,
-    oscillator: {
-        type: 'square'
-    },
-    envelope: {
-        attack: 0.1,
-        decay: 0.3,
-        release: 2
+const piano = new Tone.PolySynth({
+    voice: Tone.Synth,
+    options: {
+        oscillator: {
+            type: 'sine'
+        }
     }
 }).toDestination();
+synth.volume.value = -12;  // Lower the synth volume
+piano.volume.value = -8;  // Lower the piano volume
 
-const pluckSynth = new Tone.PolySynth(Tone.Synth, {
-    volume: -8,
-    oscillator: {
-        type: "sine"
-    },
-    envelope: {
-        attack: 0.5,
-        decay: 0.1,
-        sustain: 0.3,
-        release: 1
-    }
+// Reverb and Delay effects
+const reverb = new Tone.Reverb({
+    decay: 2.5,
+    preDelay: 0.3
 }).toDestination();
+synth.connect(reverb);
+piano.connect(reverb);
 
-// Rhythmic patterns
-const kickPattern = new Tone.Pattern((time) => {
-    kick.triggerAttackRelease('C1', '8n', time);
-}, ['C1'], "up");
+// Define melody and chord progression in B minor
+const melody = ["B4", "D5", "F#4", "E5", "B4", "D5", "F#4", "E5"];
+const chords = ["B3", "D4", "F#3", "B3", "D4", "F#3", "B3", "D4"];
 
-const snarePattern = new Tone.Pattern((time) => {
-    snare.triggerAttackRelease('16n', time);
-}, [''], "random", '2n');
+// Sequence for synth melody
+const melodyPart = new Tone.Sequence((time, note) => {
+    synth.triggerAttackRelease(note, "8n", time);
+}, melody, "16n");
 
-const bassPattern = new Tone.Sequence((time, note) => {
-    bassSynth.triggerAttackRelease(note, '16n', time);
-}, ["C2", "G1", "C1", "E1"], "4n");
+// Sequence for piano chords
+const chordPart = new Tone.Sequence((time, note) => {
+    piano.triggerAttackRelease(note, "4n", time);
+}, chords, "2n");
 
-const pluckPattern = new Tone.Sequence((time, note) => {
-    pluckSynth.triggerAttackRelease(note, '8n', time);
-}, ["E4", "G4", "B4", "D5"], "4n");
+// Drum pattern
+const drumPattern = new Tone.Pattern((time) => {
+    drums.triggerAttackRelease("C2", "8n", time);
+}, ["C2"], "up");
 
-// Control Play/Stop
+// Play / Stop Button
 document.getElementById('playButton').addEventListener('click', async () => {
-    await Tone.start();  // Required to start audio context
+    await Tone.start();  // Start the Audio Context
+    console.log("Playback started");
+
     if (Tone.Transport.state === 'stopped') {
-        Tone.Transport.bpm.value = 128;
         Tone.Transport.start();
-        kickPattern.start(0);
-        snarePattern.start('1m'); // Start snare one measure in
-        bassPattern.start('2m');  // Start bass two measures in
-        pluckPattern.start('3m'); // Start pluck three measures in
+        melodyPart.start(0);
+        chordPart.start(0);
+        drumPattern.start(0);
     } else {
         Tone.Transport.stop();
-        kickPattern.stop();
-        snarePattern.stop();
-        bassPattern.stop();
-        pluckPattern.stop();
+        melodyPart.stop();
+        chordPart.stop();
+        drumPattern.stop();
     }
 });
