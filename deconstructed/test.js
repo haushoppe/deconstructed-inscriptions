@@ -1,41 +1,64 @@
 
 // Chillwave/Trap Music Simulation
 
-// Setup BPM and scale
-Tone.Transport.bpm.value = 80.75;
+// Setup BPM
+Tone.Transport.bpm.value = 80;
 
 // Define instruments
 const drums = new Tone.MembraneSynth().toDestination();
-const synth = new Tone.PolySynth({
-    voice: Tone.Synth,
-    options: {
-        oscillator: {
-            type: 'sine'
-        }
-    }
-}).toDestination();
-const piano = new Tone.PolySynth({
-    voice: Tone.Synth,
-    options: {
-        oscillator: {
-            type: 'sine'
-        }
-    }
-}).toDestination();
-synth.volume.value = -12;  // Lower the synth volume
-piano.volume.value = -8;  // Lower the piano volume
 
-// Reverb and Delay effects
+const synth = new Tone.PolySynth(Tone.Synth, {
+    oscillator: {
+        type: 'sine'
+    }
+}).toDestination();
+
+const piano = new Tone.PolySynth(Tone.Synth, {
+    oscillator: {
+        type: 'sine'
+    }
+}).toDestination();
+
+const bass = new Tone.MonoSynth({
+    oscillator: {
+        type: 'square'
+    },
+    envelope: {
+        attack: 0.1,
+        decay: 0.3,
+        release: 2
+    }
+}).toDestination();
+
+const choir = new Tone.PolySynth(Tone.Synth, {
+    volume: -10,
+    oscillator: {
+        type: 'sawtooth'
+    },
+    envelope: {
+        attack: 0.5,
+        decay: 0.1,
+        sustain: 0.3,
+        release: 1
+    }
+}).toDestination();
+
+// Effects
 const reverb = new Tone.Reverb({
     decay: 2.5,
     preDelay: 0.3
 }).toDestination();
 synth.connect(reverb);
 piano.connect(reverb);
+choir.connect(reverb);
 
-// Define melody and chord progression in B minor
+// const scratch = new Tone.FeedbackDelay("8n", 0.5).toDestination();
+// synth.connect(scratch);
+
+// Melody and chord progression
 const melody = ["B4", "D5", "F#4", "E5", "B4", "D5", "F#4", "E5"];
 const chords = ["B3", "D4", "F#3", "B3", "D4", "F#3", "B3", "D4"];
+const bassLine = ["B1", "D2", "F#1", "B1"];
 
 // Sequence for synth melody
 const melodyPart = new Tone.Sequence((time, note) => {
@@ -46,6 +69,16 @@ const melodyPart = new Tone.Sequence((time, note) => {
 const chordPart = new Tone.Sequence((time, note) => {
     piano.triggerAttackRelease(note, "4n", time);
 }, chords, "2n");
+
+// Bass pattern
+const bassPattern = new Tone.Sequence((time, note) => {
+    bass.triggerAttackRelease(note, "2n", time);
+}, bassLine, "2n");
+
+// Choir pattern
+const choirPattern = new Tone.Sequence((time, note) => {
+    choir.triggerAttackRelease(note, "4n", time);
+}, ["D5", "F#5", "A5", "C#6"], "1n");
 
 // Drum pattern
 const drumPattern = new Tone.Pattern((time) => {
@@ -60,12 +93,16 @@ document.getElementById('playButton').addEventListener('click', async () => {
     if (Tone.Transport.state === 'stopped') {
         Tone.Transport.start();
         melodyPart.start(0);
-        chordPart.start(0);
-        drumPattern.start(0);
+        chordPart.start('2m');
+        bassPattern.start('4m');
+        choirPattern.start('8m');
+        drumPattern.start('1m');
     } else {
         Tone.Transport.stop();
         melodyPart.stop();
         chordPart.stop();
+        bassPattern.stop();
+        choirPattern.stop();
         drumPattern.stop();
     }
 });
