@@ -96,72 +96,86 @@ const drumPattern = new Tone.Pattern((time, note) => { drums.triggerAttackReleas
 
 
 
-// Create a new buffer and load the audio file
-var buffer = new Tone.Buffer(audioUrl, function() {
 
-  console.log("Audio Buffer is now available.");
+// Preload buffer and initialize all components but do not start anything yet
+var buffer;
+var players;
 
-  // Create a map to manage multiple players
-  var players = new Tone.Players({
-      sample1: buffer.get(),
-      sample2: buffer.get(),
-  }, function() {
-      console.log("Players are ready to play the buffer.");
-  }).toDestination();
-
-  // Function to play a sample given a name, start time, duration, and repetition details
-  function playSample(name, sampleStart, sampleDuration, trackStart, trackDelay, repetitions) {
-
-    let player = players.player(name);
-
-      for (let i = 0; i < repetitions; i++) {
-          // Calculate the start time for each repetition
-          let delay = trackStart + i * trackDelay;
-          player.start(`+${delay}`, sampleStart, sampleDuration);
-      }
-  }
-
-  // Stop all currently playing audio
-  function stopAllAudio() {
-      players.stopAll();
-  }
+function setupAudio() {
+    buffer = new Tone.Buffer(audioUrl, function() {
+        console.log("Audio Buffer is now available.");
+        players = new Tone.Players({
+            sample1: buffer.get(),
+            sample2: buffer.get(),
+        }, function() {
+            console.log("Players are ready to play the buffer.");
+            // Indicate to the user that the audio is ready to be played (e.g., enable play button)
+            document.getElementById('playButton').disabled = false;
+        }).toDestination();
+    });
+}
 
 
+// Function to play a sample given a name, start time, duration, and repetition details
+function playSample(name, sampleStart, sampleDuration, trackStart, trackDelay, repetitions) {
 
-  // Add Play / Stop functionality to button on web page
-  document.getElementById('playButton').addEventListener('click', async () => {
+  let player = players.player(name);
 
-    await Tone.start();  // Start the Audio Context
-    console.log("Playback started");
-
-    if (Tone.Transport.state === 'stopped') {
-      // Start all sequences and patterns if the Transport is stopped
-      // Tone.Transport.start();
-      // melodyPart.start(0);
-      // chordPart.start('2m');
-      // bassPattern.start('4m');
-      // choirPattern.start('8m');
-      // drumPattern.start('1m');
-
-      // scratch + digital currency
-      // Start playing 1 second into the audio file, play until 2.5 seconds,
-      // start playback with a delay of 4 seconds between each repetition, repeat 3 times
-      // playSegment(audioUrl, 1, 3.1, 4, 3);
-
-      // sampleStart, sampleDuration, trackStart, trackDelay, repetitions
-      // playSample('sample1', 1, 2.5, 1, 3, 3);
-      playSample('sample2', 10, 5, 5, 0.1, 3);
-
-    } else {
-      // Stop all sequences and patterns if the Transport is running
-      Tone.Transport.stop();
-      melodyPart.stop();
-      chordPart.stop();
-      bassPattern.stop();
-      choirPattern.stop();
-      drumPattern.stop();
+    for (let i = 0; i < repetitions; i++) {
+        // Calculate the start time for each repetition
+        let delay = trackStart + i * trackDelay;
+        player.start(`+${delay}`, sampleStart, sampleDuration);
     }
-  });
+}
 
+
+
+// Create a new buffer and load the audio file
+function setupAudio() {
+  buffer = new Tone.Buffer(audioUrl, function() {
+
+    console.log("Audio Buffer is now available.");
+    document.getElementById('playButton').disabled = false;
+
+    players = new Tone.Players({
+        sample1: buffer.get(),
+        sample2: buffer.get(),
+    }).toDestination();
+  });
+}
+
+// Call setupAudio early in your page load
+setupAudio();
+
+
+// Add Play / Stop functionality to button on web page
+document.getElementById('playButton').addEventListener('click', async () => {
+
+  await Tone.start();  // Start the Audio Context
+  console.log("Playback started");
+
+  if (Tone.Transport.state === 'stopped') {
+    // Start all sequences and patterns if the Transport is stopped
+    Tone.Transport.start();
+    melodyPart.start(0);
+    chordPart.start('2m');
+    bassPattern.start('4m');
+    choirPattern.start('8m');
+    drumPattern.start('1m');
+
+    // scratch + digital currency
+    // sampleStart, sampleDuration, trackStart, trackDelay, repetitions
+    playSample('sample1', 1, 2.5, 1, 3, 3);
+    // playSample('sample2', 10, 5, 5, 0.1, 3);
+
+  } else {
+    // Stop all sequences and patterns if the Transport is running
+    Tone.Transport.stop();
+    melodyPart.stop();
+    chordPart.stop();
+    bassPattern.stop();
+    choirPattern.stop();
+    drumPattern.stop();
+  }
 
 });
