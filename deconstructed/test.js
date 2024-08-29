@@ -4,7 +4,11 @@
 // Setting it to 80 means the track will have a slow, relaxed pace.
 Tone.Transport.bpm.value = 80;
 
-const audioUrl = '/content/ca666064f776995d96c5f1bc6f4a1aad31e2216ec22fb06e3c94a0a44f4331bai0';
+const audioUrls = {
+  digitalCurrency: "/content/ca666064f776995d96c5f1bc6f4a1aad31e2216ec22fb06e3c94a0a44f4331bai0", // https://www.ord.io/1481
+  melody: "/content/e47f4f20f7d8729748f3e80a36b9e2d600b642880139bffb8394ead26136652ei0" // https://www.ord.io/35155658
+};
+
 
 // Define instruments
 // Create a membrane synthesizer for drum sounds and route output to speakers
@@ -98,54 +102,59 @@ const drumPattern = new Tone.Pattern((time, note) => { drums.triggerAttackReleas
 
 
 // Preload buffer and initialize all components but do not start anything yet
-var buffer;
-var players;
+var players = [];
 
-function setupAudio() {
-    buffer = new Tone.Buffer(audioUrl, function() {
-        console.log("Audio Buffer is now available.");
-        players = new Tone.Players({
-            sample1: buffer.get(),
-            sample2: buffer.get(),
-        }, function() {
-            console.log("Players are ready to play the buffer.");
-            // Indicate to the user that the audio is ready to be played (e.g., enable play button)
-            document.getElementById('playButton').disabled = false;
-        }).toDestination();
-    });
-}
+// Setup audio by loading buffers and preparing players
+function setupAudio(urls) {
 
-
-// Function to play a sample given a name, start time, duration, and repetition details
-function playSample(name, sampleStart, sampleDuration, trackStart, trackDelay, repetitions) {
-
-  let player = players.player(name);
-
-    for (let i = 0; i < repetitions; i++) {
-        // Calculate the start time for each repetition
-        let delay = trackStart + i * trackDelay;
-        player.start(`+${delay}`, sampleStart, sampleDuration);
-    }
-}
-
-
-
-// Create a new buffer and load the audio file
-function setupAudio() {
-  buffer = new Tone.Buffer(audioUrl, function() {
-
-    console.log("Audio Buffer is now available.");
+  const buffers = new Tone.Buffers(urls, () => {
+    console.log("All audio buffers are now available.");
     document.getElementById('playButton').disabled = false;
-
-    players = new Tone.Players({
-        sample1: buffer.get(),
-        sample2: buffer.get(),
-    }).toDestination();
+    setupPlayers(buffers);
   });
 }
 
+// Function to setup players using the loaded buffers
+function setupPlayers(buffers) {
+
+  Object.keys(audioUrls).forEach(name => {
+    players[name] = new Tone.Player(buffers.get(name)).toDestination();
+  });
+
+  // Log that players are setup and ready to use
+  console.log("Players are setup and ready to play:", players);
+}
+
+
+/**
+ * Plays a sample based on a scheduler
+ *
+ * @param {string} name - The name of the sample to play.
+ * @param {number} sampleOffset - The offset from the beginning of the sample to start at.
+ * @param {number} sampleDuration - How long the sample should play, in seconds.
+ * @param {string} startTime - The musical notation for when to start the initial playback (e.g., "1m").
+ * @param {string} interval - The musical notation for the interval between repeats (e.g., "4n").
+ * @param {string} duration - How long to continue repeating, expressed in musical notation (e.g., "8m").
+ */
+function playSample(name, sampleOffset, sampleDuration, startTime, interval, duration) {
+  const player = players[name];
+
+  // scheduleRepeat(callback, interval, startTime, duration)
+  // Schedule an event to be invoked repeatedly:
+  // 1. `interval`: The time interval between each invocation (e.g., "4n").
+  // 2. `startTime`: When to start the first invocation (e.g., "1m").
+  // 3. `duration`: How long from `startTime` to keep repeating the event.
+  // The duration should be calculated as the total time from the start, not the duration of each individual event.
+  Tone.Transport.scheduleRepeat(function(time) {
+      // `time` is the precise time when this callback is fired, which aligns with the transport's timeline
+      // Use the exact `time` provided for precise synchronization
+      console.log('Play', name, 'at', time);
+      player.start(time, sampleOffset, sampleDuration);
+  }, interval, startTime, duration);
+}
+
 // Call setupAudio early in your page load
-setupAudio();
+setupAudio(audioUrls);
 
 
 // Add Play / Stop functionality to button on web page
@@ -157,16 +166,15 @@ document.getElementById('playButton').addEventListener('click', async () => {
   if (Tone.Transport.state === 'stopped') {
     // Start all sequences and patterns if the Transport is stopped
     Tone.Transport.start();
+
     melodyPart.start(0);
     chordPart.start('2m');
     bassPattern.start('4m');
     choirPattern.start('8m');
     drumPattern.start('1m');
 
-    // scratch + digital currency
-    // sampleStart, sampleDuration, trackStart, trackDelay, repetitions
-    playSample('sample1', 1, 2.5, 1, 3, 3);
-    // playSample('sample2', 10, 5, 5, 0.1, 3);
+    playSample('digitalCurrency', 1, 2.4, "4n", "1m", "2m");
+    playSample('melody', 11, 11, "1m", "4m", "4m");
 
   } else {
     // Stop all sequences and patterns if the Transport is running
